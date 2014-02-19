@@ -14,10 +14,11 @@ class DrumSet < Artoo::MainRobot
   end
 
   def initialize
-    @low_tom = Surface.new(0, 100, 20)
-    @high_tom = Surface.new(-100, 0, 47)
-    @@hit = true
+    @low_tom = Surface.new(0, 100, 36)
+    @high_tom = Surface.new(-100, 0, 38)
     @drums = [@low_tom, @high_tom]
+    @@finger = nil
+    @previous = {}
     super
   end
 
@@ -28,25 +29,26 @@ class DrumSet < Artoo::MainRobot
     frame = args[1]
     return if frame.nil?
 
-    finger = frame.pointables.sample
-
-    if @@hit && reset_hit?(finger)
-      @@hit = false
-    else
-      @@hit = true
-      return
+    @@finger = frame.pointables.detect do |point|
+      point.timeVisible > 1.5
     end
 
-    if finger
-      x_position = finger.tipPosition[0]
-      y_position = finger.tipPosition[1]
-      y_velocity = finger.tipVelocity[1]
+    if @@finger
+      x_position = @@finger.tipPosition[0]
+      y_position = @@finger.tipPosition[1]
+      y_velocity = @@finger.tipVelocity[1]
+      p y_velocity
     end
 
-    if is_a_hit?(y_position) && @@hit == false
+    return unless y_velocity
+    return unless y_velocity.abs > 1000
+
+    if is_a_hit?(frame.timestamp, y_velocity)
       drum_for(@drums, x_position)
-      @@hit = true
     end
+
+    @previous[:timestamp] = frame.timestamp
+    @previous[:y_velocity] = y_velocity
   end
 
   def on_close(*args)
@@ -55,12 +57,13 @@ class DrumSet < Artoo::MainRobot
 
   private
 
-  def reset_hit?(finger)
-    finger.nil? || finger.tipVelocity[1] < 0
-  end
-
-  def is_a_hit?(y_position)
-    y_position && y_position > 100 && y_position < 125
+  def is_a_hit?(timestamp, y_velocity)
+    if @previous[:y_velocity] && y_velocity && @previous[:y_velocity] > 0 && y_velocity < 0 && (timestamp - @previous[:timestamp] > 500)
+      puts "#{timestamp - @previous[:timestamp]} --- #{y_velocity}"
+      #puts "#{timestamp}: #{@previous[:y_velocity]} --- #{y_velocity}"
+      return true
+    end
+    false
   end
 
   def drum_for(drums, x_position)
