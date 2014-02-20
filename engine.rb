@@ -28,49 +28,59 @@ class DrumSet < Artoo::MainRobot
 
   def on_frame(*args)
     frame = args[1]
-    return if frame.nil?
 
-    #@@finger = frame.pointables.reduce(nil) { |old, point|
-    #  if old == nil || (point.tipPosition[1] < old.tipPosition[1]) && point.length > 40
-    #    p 'new'
-    #    point
-    #  else
-    #    p 'OLD'
-    #    old
+    return if frame.hands.empty?
+
+    if frame.hands.length == 1
+      @hand = frame.hands.first
+      #@hand = frame.hands.detect{ |hand| hand.timeVisible > 0.5 }
+
+      x_position = @hand.palmPosition[0]
+      y_position = @hand.palmPosition[1]
+      y_velocity = @hand.palmVelocity[1]
+      #puts "*" * (y_position/10).to_i
+
+      if is_a_hit?(y_position)
+        drum_for(@drums, x_position, y_velocity)
+      end
+
+      @previous[:y_position] = y_position
+    elsif frame.hands.length == 2
+      @first_hand = frame.hands[0]
+      @second_hand = frame.hands[1]
+
+      @active = [@first_hand, @second_hand].detect{ | hand| hand.palmPosition[1] < 150 }
+      return if @active.nil?
+      p @active.id
+
+      active_y_position = @active.palmPosition[1]
+
+      if is_a_hit?(active_y_position)
+        drum_for(@drums, @active.palmPosition[0], @active.palmVelocity[1])
+      end
+
+      @previous[:y_position] = active_y_position
+    end
+    #
+    #if @hands.count == 1
+    #  x_position[0] = @hands.first.palmPosition[0]
+    #  y_position[0] = @hands.first.palmPosition[1]
+    #  y_velocity[0] = @hands.first.palmVelocity[1]
+    #  puts "*" * (y_position[0]/10).to_i
+    #elsif @hands.count > 1
+    #  @hands.each_with_index do |hand, index|
+    #    x_position[index] = hand.palmPosition[0]
+    #    y_position[index] = hand.palmPosition[1]
+    #    y_velocity[index] = hand.palmPosition[1]
     #  end
-    #}
-
-    @@finger = frame.pointables.detect do |point|
-      p 'point'
-      point.length > 40
-    end
-
-    if @@finger
-      x_position = @@finger.tipPosition[0]
-      y_position = @@finger.tipPosition[1]
-      y_velocity = @@finger.tipVelocity[1]
-    end
-
-    #frame.pointables.delete(@@finger)
-
-    #@@second_finger = frame.pointables.detect do |point|
-    #  point.timeVisible > 0.5
+    #  puts "X" * (y_position[1]/10).to_i
     #end
 
-    #if @@second_finger
-     # p 'have a second'
-     # byebug
+
+    #if @@hands.length == 1
+    #elsif @@hands.length > 1
     #end
 
-    return unless y_velocity
-    #return unless y_velocity.abs > 1000
-
-    puts "*" * (y_position/10).to_i
-
-    if is_a_hit?(frame.timestamp, y_position)
-      drum_for(@drums, x_position, y_velocity)
-    end
-    @previous[:y_position] = y_position
 
     #@previous[:timestamp] = frame.timestamp
     #@previous[:y_velocity] = y_velocity
@@ -91,7 +101,8 @@ class DrumSet < Artoo::MainRobot
   #  false
   #end
 
-  def is_a_hit?(timestamp, y_position)
+  def is_a_hit?(y_position)
+
     if @previous[:y_position] && y_position && @previous[:y_position] > 150 && y_position < 150
       puts "#{y_position} -- #{@previous[:y_position]}"
       puts 'passed 200'
