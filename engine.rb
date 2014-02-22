@@ -38,7 +38,11 @@ class DrumSet < Artoo::MainRobot
       x_position = @hand.palmPosition[0]
       y_position = @hand.palmPosition[1]
       y_velocity = @hand.palmVelocity[1]
-      #puts "*" * (y_position/10).to_i
+      print "\r"
+      (y_position/10).to_i.times do
+        print "*"
+      end
+      print "                                    "
 
       if is_a_hit?(y_position)
         drum_for(@drums, x_position, y_velocity)
