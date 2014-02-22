@@ -12,10 +12,10 @@ class DrumSet < Artoo::MainRobot
   end
 
   def initialize
-    @snare = Surface.new(0, 100, 36)
-    @bass_drum = Surface.new(-51, 0, 38)
-    @hit_hat = Surface.new(-100, -50, 57)
-    @drums = [@snare, @bass_drum, @hit_hat]
+    @bass_drum = Surface.new(0, 100, 36)
+    @snare = Surface.new(-51, 0, 38)
+    @hi_hat = Surface.new(-100, -50, 57)
+    @drums = [@snare, @bass_drum, @hi_hat]
 
     @finger = nil
     @previous = {}
@@ -38,7 +38,7 @@ class DrumSet < Artoo::MainRobot
     puts "*" * (y_position/10).to_i
 
     if is_a_hit?(y_position)
-      drum_for(@drums, x_position, y_velocity)
+      drum_for(x_position, y_velocity)
     end
 
     @previous[:y_position] = y_position
@@ -61,18 +61,18 @@ class DrumSet < Artoo::MainRobot
   end
 
   def is_a_hit?(y_position)
-    if @previous[:y_position] && y_position && @previous[:y_position] > 150 && y_position < 150
+    if @previous[:y_position] && @previous[:y_position] > 150 && y_position < 150
       puts "#{y_position} -- #{@previous[:y_position]}"
-      return true
+      true
     else
       false
     end
   end
 
-  def drum_for(drums, x_position, y_velocity)
+  def drum_for(x_position, y_velocity)
     determine_volume_from(y_velocity)
 
-    drum_hit = drums.detect do |drum|
+    drum_hit = @drums.detect do |drum|
       x_position > drum.left_boundary && x_position < drum.right_boundary
     end
 
