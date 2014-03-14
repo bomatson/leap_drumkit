@@ -1,19 +1,20 @@
-## Building a LeapMotion DrumKit in Ruby
+## Building a LeapMotion DrumSet in Ruby
 
 I love playing around with the LeapMotion. It is a wonderful little piece of technology, has great documentation, and is way ahead of its time.
-More specifically, I'm interested in its potential to communicate with MIDI, the protocol which allows software to translate musical data.
+More specifically, I'm interested in its potential to communicate with (MIDI)[http://en.wikipedia.org/wiki/MIDI], the protocol which allows software to translate musical data.
 
-A quick aside: My background is in music, playing drumset in the UMichigan jazz program and more recently a spot on Conan
+A quick aside: My background is in music, having played drums since I was a small fry. Naturally, my instinct was to make air-drumming possible with the LeapMotion.
 
-I checked out the available options for LeampMotion "drumsets" and found them to be difficult to use.
-Nothing gave a valid attempt to properly interpret a stroke, so I sought to build my own.
+I checked out the available options for LeapMotion "drumsets" and found them pretty difficult to use.
+Nothing gave a valid attempt to properly interpret a stroke (aside from (AirDrum)[https://github.com/stocyr/AirDrum]), so I sought to build my own.
 
 ### Getting LeapMotion Sensor Data
 
 The official LeapMotion API supports C++, C#, Java, Javascript and a few other languages. I wanted to use Ruby, so I hunted down a few suitable options.
-To get up and running quickly, I used Artoo's adapter for the LeapMotion. If you haven't seen the Ruby on Robots libraries yet from Hybrid Group, I would give it a look-see.
+To get up and running quickly, I used (Artoo's adapter for the LeapMotion)[https://github.com/hybridgroup/artoo-leapmotion].
+If you haven't checked out the (Ruby on Robots)[http://artoo.io/] from (Hybrid Group)[http://hybridgroup.com/] yet, I would give it a look-see.
 
-The Leap sends data at each frame about every 'Pointable' it sees. A Pointable can be a tool (such as a drumstick) or even a finger.
+The LeapMotion sends data at each frame about every 'Pointable' it sees. A Pointable can be a finder or a tool (such as a drumstick or pen).
 The Pointable has a X, Y and Z position, as well as the velocity in each direction. Check it out:
 
 ````ruby
@@ -43,7 +44,8 @@ We built a Surface class that could take a left and right boundary, as well as a
 
 ````ruby
 class Surface
-  ...
+  #...
+
   SNARE_OPTIONS = { left: -51, right: 0, note: 38 }
   KICK_OPTIONS  = { left: 0, right: 100, note: 36 }
   HAT_OPTIONS   = { left: -100, right: -50, note: 57 }
@@ -64,13 +66,14 @@ class Surface
       @drum_note = opts[:note]
     end
   end
-  ...
+
+  #...
+
 end
 ````
 
-
-Next, we used the wonderful UniMIDI library to communicate the surface sounds to MIDI.
-UniMIDI also lets you set the volume of each note, so we could play both soft & loud drum hits:
+Next, we used the wonderful (UniMIDI)[https://github.com/arirusso/unimidi] library to communicate the surface sounds to MIDI.
+UniMIDI lets you set the volume of each note, so we could play both soft & loud drum hits:
 
 ````ruby
 def play(volume)
@@ -102,10 +105,10 @@ class DrumSet < Artoo::MainRobot
 end
 ````
 
-### Recongnizing a Stroke
+### Recognizing a Stroke
 
 Once I had my surfaces in place, I needed to capture a single hand stroke.
-At first, I attempted to read the velocity at each point in the stroke and determine the surface as 'hit' once the Y velocity changed from positive to negative.
+At first, I attempted to read the velocity at each point in the stroke and determine the surface as a 'hit' once the Y velocity changed from positive to negative:
 
 ````ruby
 def is_a_hit?(timestamp, y_velocity)
@@ -117,10 +120,12 @@ end
 ````
 
 This attempt was a good first stab, but it became very complicated to read the velocity before and after a hit, as well as timestamp each frame of the stroke.
-Also, I wanted to include dynamics in each hit, which could not be captured effectively since the velocity was so close to 0.
 
-The solution, thanks to some great help from Alex @ Carbon Five, was to create an imaginary threshold (say, 6 inches from the Leap) and log the previous Y position of each stroke.
-This way, I would only hit if the current Y position was less than the threshold, and the previous y_position was above it:
+Also, I wanted to account for the dynamics of each hit. The velocity of the stroke is the key ingredient in determining how hard the drum is hit.
+This could not be captured effectively if the velocity was always so close to 0.
+
+The solution, thanks to some great help from (Alex Cruikshank)[http://www.carbonfive.com/employee/alex-cruikshank], was to create an imaginary threshold (say, 6 inches from the LeapMotion) and log the previous Y position of each stroke.
+This way, a hit was only detected if the current Y position was less than the threshold, and the previous y_position was above it:
 
 ````ruby
 def is_a_hit?(y_position)
@@ -132,7 +137,7 @@ def is_a_hit?(y_position)
 end
 ````
 
-Next, I found the surface in a `drum_for` method which checks the X position to see which drum you've hit:
+Next, I found the 'hit' surface in a `drum_for` method which compares the x_position to each drum's boundaries:
 
 ````ruby
 def drum_for(x_position, y_velocity)
@@ -146,43 +151,29 @@ def drum_for(x_position, y_velocity)
 end
 ````
 
-The `determine_volume_from` function uses the velocity at that point to find a proportional value between 0 - 100, where 100 is the loudest.
+I use the velocity at that point to calculate the 'loudness' of the stroke.
+The MIDI protocol maxes out volume at 100, so the `determine_volume_from` function finds a proportional value between 0 - 100 based on the velocity:
 
 ````ruby
-@volume = [[ 0, (velocity.abs/30).to_i ].max, 100].min
-````
-
-Check out this video to see it in action:
-
-### An Attempt at Two Hands
-
-The biggest challenge of this experiment was attempting to track movements of both hands. Pointable objects have ids, but they are reset if the pointable ever goes out of range.
-Luckily, the LeapMotion has a concept of a Hand object, where I could determine the X, Y and Z position of the palms. So I gave this a go.
-
-In order to play a note, I would keep track of which hand was 'active' when `is_a_hit?` was triggered:
-
-````ruby
-@first_hand = frame.hands[0]
-@second_hand = frame.hands[1]
-
-@active = [@first_hand, @second_hand].detect{ | hand| hand.palmPosition[1] < 150 }
-return if @active.nil?
-
-active_y_position = @active.palmPosition[1]
-
-if is_a_hit?(active_y_position)
-  drum_for(@drums, @active.palmPosition[0], @active.palmVelocity[1])
+def determine_volume_from(velocity)
+  @volume = [[ 0, (velocity.abs/30).to_i ].max, 100].min
 end
 ````
 
-Unfortunately, I started running into some performance issues at this point. The frame output was responsive for a single hand, but the second I attempted to read data on both, the app would lag hardcore.
+### The Final Result
 
-### Next Steps
+With this combination of techniques, I was able to detect a single stroke with a pretty reasonable amount of accuracy.
+(Check it out for yourself!)[http://youtu.be/0CHaHR7FU6g]
 
-Now that I have an idea of how to actually track a stroke and trigger MIDI via the LeapMotion API, I'd like to take a stab at rewriting this as a web app in Javascript.
-Hopefully, my rewrite can be more performant, and others will be able to access the drumkit from the browser.
+### Next Moves!
 
-If you'd like to keep track of the project's progress, you can view it on Github here
+The next challenge for this experiment is tracking the movements of both hands. Pointable objects have ids, but they are reset if the pointable ever goes out of range.
+Luckily, the LeapMotion has a concept of a Hand object, where I can determine the X, Y and Z position of the palms. I gave this a shot in a (spike)[https://github.com/bomatson/leap_drumkit/tree/spike/explore-hands], but it is still quite a WIP
 
-I had a lot of fun doing this, and would encourage you to attempt playing around with the Leap.
+Now that I can track a stroke and trigger MIDI via the LeapMotion API, I'd also like to take a stab at rewriting this as a web app in Javascript.
+With a but of visualization in the canvas, others will be able to access the drumkit from the browser!
+
+If you'd like to keep track of the project's progress, you can view it on (Github)[https://github.com/bomatson/leap_drumkit]
+
+I had a lot of fun doing this, and would encourage anyone to attempt playing around with the LeapMotion.
 There's a lot of room for growth in the community, and it's always a little fun to live in the future.
