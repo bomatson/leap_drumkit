@@ -12,9 +12,9 @@ class DrumSet < Artoo::MainRobot
   end
 
   def initialize
-    @bass_drum = Surface.new(0, 100, 36)
-    @snare = Surface.new(-51, 0, 38)
-    @hi_hat = Surface.new(-100, -50, 57)
+    @bass_drum = Surface.new(:kick)
+    @snare = Surface.new(:snare)
+    @hi_hat = Surface.new(:hat)
     @drums = [@snare, @bass_drum, @hi_hat]
 
     @finger = nil

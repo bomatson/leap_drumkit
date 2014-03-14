@@ -2,7 +2,11 @@
 
 I love playing around with the LeapMotion. It is a wonderful little piece of technology, has great documentation, and is way ahead of its time.
 More specifically, I'm interested in its potential to communicate with MIDI, the protocol which allows software to translate musical data.
-I checked out the available options for LeampMotion "drumsets" and found them to be atrocious. Nothing even gave a valid attempt to properly interpret a stroke, so I sought to build my own.
+
+A quick aside: My background is in music, playing drumset in the UMichigan jazz program and more recently a spot on Conan
+
+I checked out the available options for LeampMotion "drumsets" and found them to be difficult to use.
+Nothing gave a valid attempt to properly interpret a stroke, so I sought to build my own.
 
 ### Getting LeapMotion Sensor Data
 
@@ -33,33 +37,63 @@ end
 
 ### Creating Drum Surfaces
 
-My next challenge was finding a way to create surfaces. First, I built a Surface struct that could take a left and right boundary, as well as a note.
-I used the wonderful UniMIDI library to communicate the surface sounds to MIDI:
+First off, major props to my teacher and good friend Giles Bowkett for helping me architect this!
+
+We built a Surface class that could take a left and right boundary, as well as a drum note. The basic setup was hi-hat, snare and bass drum:
 
 ````ruby
-class Surface < Struct.new(:left_boundary, :right_boundary, :drum_note)
-  def play(volume)
-    output = UniMIDI::Output.open(:first)
+class Surface
+  ...
+  SNARE_OPTIONS = { left: -51, right: 0, note: 38 }
+  KICK_OPTIONS  = { left: 0, right: 100, note: 36 }
+  HAT_OPTIONS   = { left: -100, right: -50, note: 57 }
 
-    output.open do |node|
-       node.puts(0x90, drum_note, volume)
-       sleep(0.1)
-       node.puts(0x80, drum_note, volume)
+  def initialize(drum_type=nil, *opts)
+    case drum_type
+    when :snare
+      opts = SNARE_OPTIONS
+    when :kick
+      opts = KICK_OPTIONS
+    when :hat
+      opts = HAT_OPTIONS
     end
+
+    if opts.present?
+      @left_boundary = opts[:left]
+      @right_boundary = opts[:right]
+      @drum_note = opts[:note]
+    end
+  end
+  ...
+end
+````
+
+
+Next, we used the wonderful UniMIDI library to communicate the surface sounds to MIDI.
+UniMIDI also lets you set the volume of each note, so we could play both soft & loud drum hits:
+
+````ruby
+def play(volume)
+  output = UniMIDI::Output.open(:first)
+
+  output.open do |node|
+     node.puts(0x90, drum_note, volume)
+     sleep(0.1)
+     node.puts(0x80, drum_note, volume)
   end
 end
 ````
 
-Next, I built a DrumSet class which created the surfaces at initialization:
+Next, I built a DrumSet subclass of the Artoo::MainRobot which created the surfaces at initialization:
 
 ````ruby
 class DrumSet < Artoo::MainRobot
   #...
 
   def initialize
-    @bass_drum = Surface.new(0, 100, 36)
-    @snare = Surface.new(-51, 0, 38)
-    @hi_hat = Surface.new(-100, -50, 57)
+    @bass_drum = Surface.new(:kick)
+    @snare = Surface.new(:snare)
+    @hi_hat = Surface.new(:hat)
     @drums = [@snare, @bass_drum, @hi_hat]
 
     #...
@@ -82,8 +116,8 @@ def is_a_hit?(timestamp, y_velocity)
 end
 ````
 
-This attempt ended up failing - it became very complicated to read the velocity before and after a hit, as well as timestamp the stroke so it did not read more than once per stroke.
-Also, I wanted to include dynamics in each stroke, which I could not capture effectively since the velocity was so close to 0.
+This attempt was a good first stab, but it became very complicated to read the velocity before and after a hit, as well as timestamp each frame of the stroke.
+Also, I wanted to include dynamics in each hit, which could not be captured effectively since the velocity was so close to 0.
 
 The solution, thanks to some great help from Alex @ Carbon Five, was to create an imaginary threshold (say, 6 inches from the Leap) and log the previous Y position of each stroke.
 This way, I would only hit if the current Y position was less than the threshold, and the previous y_position was above it:
@@ -142,12 +176,11 @@ end
 ````
 
 Unfortunately, I started running into some performance issues at this point. The frame output was responsive for a single hand, but the second I attempted to read data on both, the app would lag hardcore.
-You can see for yourself in this video:
 
 ### Next Steps
 
 Now that I have an idea of how to actually track a stroke and trigger MIDI via the LeapMotion API, I'd like to take a stab at rewriting this as a web app in Javascript.
-Hopefully, my rewrite can be more performant, and other will be able to access the drumkit from the browser.
+Hopefully, my rewrite can be more performant, and others will be able to access the drumkit from the browser.
 
 If you'd like to keep track of the project's progress, you can view it on Github here
 
