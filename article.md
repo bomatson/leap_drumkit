@@ -1,18 +1,18 @@
 ## Building a LeapMotion DrumSet in Ruby
 
 I love playing around with the LeapMotion. It is a wonderful little piece of technology, has great documentation, and is way ahead of its time.
-More specifically, I'm interested in its potential to communicate with (MIDI)[http://en.wikipedia.org/wiki/MIDI], the protocol which allows software to translate musical data.
+More specifically, I'm interested in its potential to communicate with [MIDI]( http://en.wikipedia.org/wiki/MIDI ), the protocol which allows software to translate musical data.
 
 A quick aside: My background is in music, having played drums since I was a small fry. Naturally, my instinct was to make air-drumming possible with the LeapMotion.
 
 I checked out the available options for LeapMotion "drumsets" and found them pretty difficult to use.
-Nothing gave a valid attempt to properly interpret a stroke (aside from (AirDrum)[https://github.com/stocyr/AirDrum]), so I sought to build my own.
+Nothing gave a valid attempt to properly interpret a stroke (aside from [ AirDrum ]( https://github.com/stocyr/AirDrum )), so I sought to build my own.
 
 ### Getting LeapMotion Sensor Data
 
-The official LeapMotion API supports C++, C#, Java, Javascript and a few other languages. I wanted to use Ruby, so I hunted down a few suitable options.
-To get up and running quickly, I used (Artoo's adapter for the LeapMotion)[https://github.com/hybridgroup/artoo-leapmotion].
-If you haven't checked out the (Ruby on Robots)[http://artoo.io/] from (Hybrid Group)[http://hybridgroup.com/] yet, I would give it a look-see.
+The official LeapMotion API supports C++, C#, Java, JavaScript and a few other languages. I wanted to use Ruby, so I hunted down a few suitable options.
+To get up and running quickly, I used [ Artoo's adapter for the LeapMotion ]( https://github.com/hybridgroup/artoo-leapmotion ).
+If you haven't checked out the [ Ruby on Robots ]( http://artoo.io/ ) from [ Hybrid Group ]( http://hybridgroup.com/ ) yet, I would give it a look-see.
 
 The LeapMotion sends data at each frame about every 'Pointable' it sees. A Pointable can be a finder or a tool (such as a drumstick or pen).
 The Pointable has a X, Y and Z position, as well as the velocity in each direction. Check it out:
@@ -38,7 +38,7 @@ end
 
 ### Creating Drum Surfaces
 
-First off, major props to my teacher and good friend Giles Bowkett for helping me architect this!
+First off, major props to my teacher and good friend [Giles Bowkett](https://twitter.com/gilesgoatboy) for helping me architect this!
 
 We built a Surface class that could take a left and right boundary, as well as a drum note. The basic setup was hi-hat, snare and bass drum:
 
@@ -72,7 +72,7 @@ class Surface
 end
 ````
 
-Next, we used the wonderful (UniMIDI)[https://github.com/arirusso/unimidi] library to communicate the surface sounds to MIDI.
+Next, we used the wonderful [ UniMIDI ]( https://github.com/arirusso/unimidi ) library to communicate the surface sounds to MIDI.
 UniMIDI lets you set the volume of each note, so we could play both soft & loud drum hits:
 
 ````ruby
@@ -80,9 +80,9 @@ def play(volume)
   output = UniMIDI::Output.open(:first)
 
   output.open do |node|
-     node.puts(0x90, drum_note, volume)
+     node.puts(0x90, @drum_note, volume)
      sleep(0.1)
-     node.puts(0x80, drum_note, volume)
+     node.puts(0x80, @drum_note, volume)
   end
 end
 ````
@@ -124,8 +124,8 @@ This attempt was a good first stab, but it became very complicated to read the v
 Also, I wanted to account for the dynamics of each hit. The velocity of the stroke is the key ingredient in determining how hard the drum is hit.
 This could not be captured effectively if the velocity was always so close to 0.
 
-The solution, thanks to some great help from (Alex Cruikshank)[http://www.carbonfive.com/employee/alex-cruikshank], was to create an imaginary threshold (say, 6 inches from the LeapMotion) and log the previous Y position of each stroke.
-This way, a hit was only detected if the current Y position was less than the threshold, and the previous y_position was above it:
+The solution, thanks to some great help from [ Alex Cruikshank ]( http://www.carbonfive.com/employee/alex-cruikshank ), was to create an imaginary threshold (say, 6 inches from the LeapMotion) and log the previous Y position of each stroke.
+This way, a hit was only detected if the current Y position was less than the threshold, and the previous Y position was above it:
 
 ````ruby
 def is_a_hit?(y_position)
@@ -163,17 +163,17 @@ end
 ### The Final Result
 
 With this combination of techniques, I was able to detect a single stroke with a pretty reasonable amount of accuracy.
-(Check it out for yourself!)[http://youtu.be/0CHaHR7FU6g]
+[ Check it out for yourself! ]( http://youtu.be/0CHaHR7FU6g )
 
 ### Next Moves!
 
-The next challenge for this experiment is tracking the movements of both hands. Pointable objects have ids, but they are reset if the pointable ever goes out of range.
-Luckily, the LeapMotion has a concept of a Hand object, where I can determine the X, Y and Z position of the palms. I gave this a shot in a (spike)[https://github.com/bomatson/leap_drumkit/tree/spike/explore-hands], but it is still quite a WIP
+The next challenge for this experiment is tracking the movements of both hands. Pointable objects have ids, but they are reset if the Pointable ever goes out of range.
+Luckily, the LeapMotion has a concept of a Hand object, where I can determine the X, Y and Z position of the palms. I gave this a shot in a [ spike ]( https://github.com/bomatson/leap_drumkit/tree/spike/explore-hands ), but it is still quite a WIP
 
-Now that I can track a stroke and trigger MIDI via the LeapMotion API, I'd also like to take a stab at rewriting this as a web app in Javascript.
+Now that I can track a stroke and trigger MIDI via the LeapMotion API, I'd also like to take a stab at rewriting this as a web app in JavaScript.
 With a but of visualization in the canvas, others will be able to access the drumkit from the browser!
 
-If you'd like to keep track of the project's progress, you can view it on (Github)[https://github.com/bomatson/leap_drumkit]
+If you'd like to keep track of the project's progress, you can view it on [ Github ]( https://github.com/bomatson/leap_drumkit )
 
 I had a lot of fun doing this, and would encourage anyone to attempt playing around with the LeapMotion.
 There's a lot of room for growth in the community, and it's always a little fun to live in the future.
