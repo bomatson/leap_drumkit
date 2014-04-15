@@ -15,7 +15,7 @@ class Surface
       opts = HAT_OPTIONS
     end
 
-    if opts.present?
+    unless opts.empty?
       @left_boundary = opts[:left]
       @right_boundary = opts[:right]
       @drum_note = opts[:note]
