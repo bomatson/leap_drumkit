@@ -2,8 +2,8 @@ class Surface
   attr_reader :left_boundary, :right_boundary, :drum_note
 
   SNARE_OPTIONS = { left: -51, right: 0, note: 38 }
-  KICK_OPTIONS  = { left: 0, right: 100, note: 36 }
-  HAT_OPTIONS   = { left: -100, right: -50, note: 57 }
+  KICK_OPTIONS  = { left: 0, right: 200, note: 36 }
+  HAT_OPTIONS   = { left: -200, right: -50, note: 57 }
 
   def initialize(drum_type=nil, *opts)
     case drum_type

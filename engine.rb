@@ -70,13 +70,16 @@ class DrumSet < Artoo::MainRobot
   end
 
   def drum_for(x_position, y_velocity)
-    determine_volume_from(y_velocity)
 
     drum_hit = @drums.detect do |drum|
       x_position > drum.left_boundary && x_position < drum.right_boundary
     end
 
-    drum_hit.play(@volume) if drum_hit
+    if drum_hit
+      determine_volume_from(y_velocity)
+
+      drum_hit.play(@volume)
+    end
   end
 
   def determine_volume_from(velocity)
