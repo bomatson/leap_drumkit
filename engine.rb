@@ -11,8 +11,8 @@ class DrumSet < Artoo::MainRobot
   end
 
   def initialize
-    @snare = Surface.new(0, 100, 36)
-    @bass_drum = Surface.new(-49, -1, 38)
+    @snare = Surface.new(21, 140, 36)
+    @bass_drum = Surface.new(-49, 20, 38)
     @hit_hat = Surface.new(-100, -50, 57)
     @drums = [@snare, @bass_drum, @hit_hat]
     @previous = {y_position: [] }
