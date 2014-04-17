@@ -11,8 +11,8 @@ class DrumSet < Artoo::MainRobot
   end
 
   def initialize
-    @snare = Surface.new(41, 100, 36)
-    @bass_drum = Surface.new(-49, 40, 38)
+    @snare = Surface.new(0, 100, 36)
+    @bass_drum = Surface.new(-49, -1, 38)
     @hit_hat = Surface.new(-100, -50, 57)
     @drums = [@snare, @bass_drum, @hit_hat]
     @previous = {y_position: [] }
@@ -31,7 +31,7 @@ class DrumSet < Artoo::MainRobot
 
     frame.hands.each_with_index do |hand, index|
 
-      puts "*" * (hand.palmPosition[1]/10).to_i
+      #puts "*" * (hand.palmPosition[1]/10).to_i
 
       if is_a_hit?(hand, index)
         drum_for(@drums, hand.palmPosition[0], hand.palmVelocity[1])
