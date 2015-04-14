@@ -31,7 +31,7 @@ class DrumSet < Artoo::MainRobot
 
     frame.hands.each_with_index do |hand, index|
 
-      #puts "*" * (hand.palmPosition[1]/10).to_i
+      # puts "*" * (hand.palmPosition[1]/10).to_i
 
       if is_a_hit?(hand, index)
         drum_for(@drums, hand.palmPosition[0], hand.palmVelocity[1])
@@ -44,7 +44,7 @@ class DrumSet < Artoo::MainRobot
 
   def is_a_hit?(hand, index)
     if @previous[:y_position][index] && hand.palmPosition[1] && @previous[:y_position][index] > 150 && hand.palmPosition[1] < 150
-      puts "#{hand.palmPosition[1]} -- #{@previous[:y_position][index]}"
+      puts "OMFG A HIT #{hand.palmPosition[1]} -- #{@previous[:y_position][index]}"
       true
     else
       false
