@@ -7,7 +7,7 @@ class Sketcher
     init_screen
     crmode
     curs_set(0)
-    #draw drums?
+    # draw drums?
   end
 
   def draw(hand)
@@ -24,8 +24,6 @@ class Sketcher
   end
 
   def blam
-    # setpos(100, 100);
-    # addstr("BLAM")
-    # refresh
+    # I hit a drum!
   end
 end

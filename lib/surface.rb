@@ -1,3 +1,5 @@
+require 'unimidi'
+
 class Surface < Struct.new(:left_boundary, :right_boundary, :drum_note)
   def play(volume)
     output = UniMIDI::Output.open(:first)
