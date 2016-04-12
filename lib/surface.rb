@@ -8,5 +8,3 @@ class Surface < Struct.new(:left_boundary, :right_boundary, :drum_note)
     end
   end
 end
-
-

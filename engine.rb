@@ -1,4 +1,5 @@
 require_relative 'lib/surface'
+require_relative 'lib/sketcher'
 require 'artoo'
 require 'unimidi'
 
@@ -13,9 +14,11 @@ class DrumSet < Artoo::MainRobot
   def initialize
     @bass_drum = Surface.new(21, 140, 36)
     @snare = Surface.new(-49, 20, 38)
-    @hi_hat = Surface.new(-100, -50, 57)
-    @drums = [@snare, @bass_drum, @hi_hat]
+    # 33 is closed hat
+    @crash = Surface.new(-100, -50, 57)
+    @drums = [@snare, @bass_drum, @crash]
     @previous = {y_position: [] }
+    @board = Sketcher.new
     super
   end
 
@@ -31,7 +34,7 @@ class DrumSet < Artoo::MainRobot
 
     frame.hands.each_with_index do |hand, index|
 
-      # puts "*" * (hand.palmPosition[1]/10).to_i
+      @board.draw(hand)
 
       if is_a_hit?(hand, index)
         drum_for(@drums, hand.palmPosition[0], hand.palmVelocity[1])
@@ -44,7 +47,9 @@ class DrumSet < Artoo::MainRobot
 
   def is_a_hit?(hand, index)
     if @previous[:y_position][index] && hand.palmPosition[1] && @previous[:y_position][index] > 150 && hand.palmPosition[1] < 150
-      puts "OMFG A HIT #{hand.palmPosition[1]} -- #{@previous[:y_position][index]}"
+      @board.blam
+
+      # puts "OMFG A HIT #{hand.palmPosition[1]} -- #{@previous[:y_position][index]}"
       true
     else
       false
